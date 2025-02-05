@@ -6,9 +6,15 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Bot initialization
-API_TOKEN = '7347984574:AAFT2itjoFydJjzIyNX08TJOG5rdqB3dCo8'  # Replace with your actual bot token
+API_TOKEN = os.getenv('API_KEY')  # Replace with your actual bot token
+
+
 
 # Set up bot and dispatcher with FSMStorage (to remember the user's state)
 bot = Bot(token=API_TOKEN)
