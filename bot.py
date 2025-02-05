@@ -1,3 +1,4 @@
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils import executor
@@ -7,7 +8,6 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -15,11 +15,12 @@ load_dotenv()
 API_TOKEN = os.getenv('API_KEY')  # Replace with your actual bot token
 
 
-
-# Set up bot and dispatcher with FSMStorage (to remember the user's state)
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 dp.middleware.setup(LoggingMiddleware())
+
+# Path to your PDF files directory
+PDF_BOOKS_PATH = '/books'
 
 # State definitions
 class UserState(StatesGroup):
@@ -76,12 +77,38 @@ async def back_to_language(msg: types.Message, state: FSMContext):
     await msg.answer("You are back at the language selection. Please choose a language:", reply_markup=main_menu)
     await UserState.language.set()
 
-# Material Selection Handler
+# Material Selection Handler (Book or Audio materials)
 @dp.message_handler(lambda message: message.text in ["📚 Book", "🎧 Audio materials"], state=UserState.materials)
 async def materials_selection(msg: types.Message, state: FSMContext):
+    # Check the level and send the appropriate file for the Book
+    level_map = {
+        "Beginner": "beginner.pdf",
+        "Elementary": "elementary.pdf",
+        "Pre-Intermediate": "pre_intermediate.pdf",
+        "Intermediate": "intermediate.pdf",
+        "Upper Intermediate": "upper_intermediate.pdf",
+        "Advanced": "advanced.pdf",
+    }
+
+    # Check if the user is asking for the Book
     if msg.text == "📚 Book":
-        await msg.answer("You selected the Book. Here are the book resources for your level!")
-        # Provide the book resources or further instructions here.
+        # Get the file name based on level
+        level = await state.get_state()
+        level = level.split(":")[-1]  # Extract the level name from the state
+        pdf_file = level_map.get(level)
+
+        if pdf_file:
+            # Construct the path to the file
+            pdf_path = os.path.join(PDF_BOOKS_PATH, pdf_file)
+            if os.path.exists(pdf_path):
+                # Send the PDF file
+                await bot.send_document(msg.chat.id, open(pdf_path, 'rb'))
+                await msg.answer(f"Here is your {level} book!")
+            else:
+                await msg.answer("Sorry, the requested book is not available.")
+        else:
+            await msg.answer("Sorry, no book found for your level.")
+
     elif msg.text == "🎧 Audio materials":
         await msg.answer("You selected Audio materials. Here are the audio resources for your level!")
         # Provide the audio resources or further instructions here.
