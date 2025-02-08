@@ -14,13 +14,12 @@ load_dotenv()
 # Bot initialization
 API_TOKEN = os.getenv('API_KEY')  # Replace with your actual bot token
 
-
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 dp.middleware.setup(LoggingMiddleware())
 
 # Path to your PDF files directory
-PDF_BOOKS_PATH = '/books'
+PDF_BOOKS_PATH = 'books'
 
 # State definitions
 class UserState(StatesGroup):
@@ -62,12 +61,14 @@ async def language_selection(msg: types.Message, state: FSMContext):
         await msg.answer("You selected English. Now, please select your level:", reply_markup=levels)
         await UserState.level.set()
     elif msg.text == "Russian language":
-        await msg.answer("You selected Russian. The bot will be in Russian soon!", reply_markup=main_menu)  # Adjust for Russian flow as needed
-        await UserState.language.set()
+        await msg.answer("Вы выбрали русский язык. Теперь выберите уровень:", reply_markup=levels)
+        await UserState.level.set()
 
 # Level Selection Handler
 @dp.message_handler(lambda message: message.text in ["Beginner", "Elementary", "Pre-Intermediate", "Intermediate", "Upper Intermediate", "Advanced"], state=UserState.level)
 async def level_selection(msg: types.Message, state: FSMContext):
+    # Store the selected level in the state
+    await state.update_data(level=msg.text)
     await msg.answer(f"You selected {msg.text} level. Now, choose your learning materials:", reply_markup=level_options)
     await UserState.materials.set()
 
@@ -80,7 +81,10 @@ async def back_to_language(msg: types.Message, state: FSMContext):
 # Material Selection Handler (Book or Audio materials)
 @dp.message_handler(lambda message: message.text in ["📚 Book", "🎧 Audio materials"], state=UserState.materials)
 async def materials_selection(msg: types.Message, state: FSMContext):
-    # Check the level and send the appropriate file for the Book
+    # Retrieve the level from the stored state data
+    user_data = await state.get_data()
+    level = user_data.get("level")
+
     level_map = {
         "Beginner": "beginner.pdf",
         "Elementary": "elementary.pdf",
@@ -93,8 +97,6 @@ async def materials_selection(msg: types.Message, state: FSMContext):
     # Check if the user is asking for the Book
     if msg.text == "📚 Book":
         # Get the file name based on level
-        level = await state.get_state()
-        level = level.split(":")[-1]  # Extract the level name from the state
         pdf_file = level_map.get(level)
 
         if pdf_file:
@@ -121,3 +123,5 @@ async def back_to_level(msg: types.Message, state: FSMContext):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+
+
