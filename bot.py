@@ -9,6 +9,7 @@ from aiogram.dispatcher.filters import Text
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 # Bot initialization
@@ -58,10 +59,12 @@ level_options.add(KeyboardButton("📚 Book"))
 level_options.add(KeyboardButton("🎧 Audio materials"))
 level_options.add(KeyboardButton("🔙 Back"))
 
+
+
 # Start Command Handler
 @dp.message_handler(commands=["start"], state="*")
 async def start(msg: types.Message):
-    await msg.answer("Welcome! Please select your language:", reply_markup=main_menu)
+    await msg.answer("Welcome! Please select course:", reply_markup=main_menu)
     await UserState.language.set()
 
 # Language Selection Handler
